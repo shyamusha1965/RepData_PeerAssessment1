@@ -1,0 +1,93 @@
+---
+title: "Reproducible Research: Peer Assessment 1"
+output: 
+  html_document:
+    keep_md: true
+---
+
+
+
+## Loading and preprocessing the data
+```{r,echo=TRUE}
+library(dslabs)
+library(dplyr)
+library(ggplot2)
+setwd("C:/Users/KARAN/Documents/R projects")
+setwd("./reproducability-week2")
+data=read.csv("activity.csv")
+data$date=as.Date(data$date)
+```
+
+
+## What is mean total number of steps taken per day?
+## Mean and Toatal steps per day
+```{r,echo=TRUE }
+data%>%group_by(date)%>%
+  summarise(totalsteps=sum(steps,na.rm=T),mean=mean(steps,na.rm=T),median=median(steps,na.rm = T))%>%
+  print()%>%
+  ggplot(aes(totalsteps))+
+  geom_histogram()+labs(title="Sum of steps of each day")
+
+
+```
+
+
+## What is the average daily activity pattern?
+```{r,echo=TRUE}
+avgsteps=as.numeric(tapply(data$steps,data$interval,mean,na.rm=T))
+intervals=unique(data$interval)
+plot(intervals,avgsteps,type="l",main="Average steps for 5min interval")
+```
+The maximum avg steps for the interval is:
+```{r,echo=TRUE}
+
+intervals[which.max(avgsteps)]
+```
+
+
+## Imputing missing values
+The total number of NA's in the dataset are:
+```{r,echo=TRUE}
+sum(is.na(data$steps))
+```
+Imputing the missing values by their average 5min interval and creating a new dataset without any NA values:
+```{r,echo=TRUE}
+data1=cbind(data,avgsteps)
+data1$steps[is.na(data1$steps)]=data1$avgsteps[is.na(data1$steps)]
+head(data1)
+
+
+```
+Histogram of the total steps per day from the new dataset and displaying the new mean and median:
+```{r,echo=TRUE}
+data1%>%group_by(date)%>%
+  summarise(totalsteps=sum(steps,na.rm=T),mean=mean(steps,na.rm=T),median=median(steps,na.rm = T))%>%
+  print()%>%
+  ggplot(aes(totalsteps))+
+  geom_histogram()+labs(title="Sum of steps of each day(new dataset)")
+
+
+```
+Comapring with the old dataset with NA values:
+
+```{r,echo=TRUE}
+data%>%group_by(date)%>%
+  summarise(totalsteps=sum(steps,na.rm=T),mean=mean(steps,na.rm=T),median=median(steps,na.rm = T))%>%
+  print()%>%
+  ggplot(aes(totalsteps))+
+  geom_histogram()+labs(title="Sum of steps of each day(old dataset)")
+
+```
+The impact of impuning missing values was huge in calculating the mean and median while the sum of steps per day remained relatively unchanged for each day
+## Are there differences in activity patterns between weekdays and weekends?
+###Comparing weekday and weekend trends 
+```{r,echo=TRUE}
+data2=data1
+data2$day=weekdays(data2$date)
+data2$day=ifelse(data2$day=="Saturday"|data2$day=="Sunday","weekend","weekday")
+data2$day=factor(data2$day)
+data2%>%group_by(interval,day)%>%summarise(avgday=mean(steps,na.rm=T))%>%ggplot(aes(x=interval,y=avgday),col=day)+geom_line()+facet_grid(day~.)+labs(x="5min interval",y="Average steps per day",main="weekdays Vs weekends")
+
+
+```
+
